@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scientific Calculator</title>
+<style>
+    body, html {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        background-color: #2c3e50; font-family: 'Arial', sans-serif;
+        overflow: hidden; /* Prevent scrollbars during resize */
+        display: flex; justify-content: center; align-items: center;
+    }
+    
+    .calculator-wrapper {
+        display: flex; justify-content: center; align-items: center;
+        width: 340px; height: 650px;
+        transform-origin: center center;
+    }
+
+    .calculator {
+        background-color: #3b4249; padding: 25px 15px; border-radius: 20px 20px 40px 40px;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,0.2);
+        width: 100%; border: 2px solid #2a3138; user-select: none;
+    }
+    .brand-header {
+        display: flex; justify-content: space-between; align-items: baseline;
+        color: #fff; font-weight: bold; margin-bottom: 5px; padding: 0 10px;
+    }
+    .brand-header .brand { font-size: 16px; font-style: italic; }
+    .brand-header .model { font-size: 12px; font-weight: normal; text-align: right; }
+    
+    .screen-container { background-color: #7b8e83; border: 3px solid #222; border-radius: 5px; padding: 5px; margin-bottom: 20px; box-shadow: inset 0 3px 6px rgba(0,0,0,0.4); }
+    .status-bar { display: flex; font-size: 10px; height: 12px; gap: 8px; font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #111;}
+    .status-bar span { visibility: hidden; }
+    .status-bar span.active { visibility: visible; }
+    .screen {
+        display: flex; flex-direction: column; justify-content: space-between;
+        height: 55px; font-family: 'Courier New', Courier, monospace;
+    }
+    
+    .expression-row { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 18px; }
+    .expression { text-align: left; color: #111; font-size: 16px; letter-spacing: 1px; flex-grow: 1; white-space: pre; overflow: hidden; padding: 0 2px; }
+    .scroll-arrow { font-size: 10px; color: #111; visibility: hidden; user-select: none; width: 12px; text-align: center;}
+    
+    .cursor { display: inline-block; width: 8px; border-bottom: 2px solid black; animation: blink 1s step-end infinite; margin-bottom: 2px;}
+    @keyframes blink { 50% { opacity: 0; } }
+    
+    .result { text-align: right; color: #111; font-size: 26px; font-weight: bold; }
+
+    .keypad { display: flex; flex-direction: column; gap: 10px; }
+    .key-group { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+    .labels { display: flex; justify-content: space-between; width: 85%; font-size: 10px; padding-bottom: 0px; }
+    .label-shift { color: #d4a017; font-weight: bold; }
+    .label-alpha { color: #d63031; font-weight: bold; }
+    .label-center { text-align: center; width: 100%; }
+
+    .btn {
+        border: none; border-radius: 4px; padding: 7px 0; width: 100%;
+        font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 3px 0 #111;
+        transition: transform 0.1s, box-shadow 0.1s; display: flex; justify-content: center; align-items: center;
+    }
+    .btn:active { transform: translateY(3px); box-shadow: none; }
+
+    .btn-shift { background-color: #d4a017; color: #333; }
+    .btn-alpha { background-color: #c0392b; color: #333; }
+    .btn-mode-on { background-color: #c0392b; color: #333; }
+    .btn-sci { background-color: #2a2a2a; color: white; border-radius: 50px; padding: 8px 0; }
+    .btn-num { background-color: #e0e4e8; color: black; font-size: 32px; padding: 4px 0; border-radius: 5px; }
+    .btn-op { background-color: #2a2a2a; color: white; font-size: 32px; padding: 4px 0; border-radius: 5px; }
+    .btn-del-ac { background-color: #00b060; color: white; font-size: 16px; padding: 12px 0; border-radius: 5px; }
+    
+    .top-zone { display: grid; grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr; gap: 8px; align-items: end; margin-bottom: 5px; }
+    
+    .d-pad-container { grid-column: 3 / 4; grid-row: 1 / 3; display: flex; justify-content: center; align-items: center; height: 100%; }
+    .d-pad { background-color: #a0a5aa; border-radius: 50%; height: 50px; width: 75px; box-shadow: 0 4px 0 #555; border: 1px solid #333; position: relative; overflow: hidden; }
+    .d-btn { position: absolute; background: transparent; border: none; cursor: pointer; outline: none; color: #1e3799; font-size: 10px; display: flex; justify-content: center; align-items: center; }
+    .d-btn:active { background: rgba(0,0,0,0.1); color: #000; }
+    .d-btn.left { top: 15%; left: 0; width: 35%; height: 70%; padding-right: 5px; }
+    .d-btn.right { top: 15%; right: 0; width: 35%; height: 70%; padding-left: 5px;}
+    .d-btn.up { top: 0; left: 15%; width: 70%; height: 35%; padding-top: 2px;}
+    .d-btn.down { bottom: 0; left: 15%; width: 70%; height: 35%; padding-bottom: 2px;}
+    
+    .scientific-zone { display: grid; grid-template-columns: repeat(6, 1fr); row-gap: 5px; column-gap: 8px; }
+    .numpad-zone { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="calculator-wrapper" id="calc-wrapper">
+<div class="calculator">
+    <div class="brand-header">
+        <span class="brand">Scientific Calculator</span>
+        <span class="model">MK26</span>
+    </div>
+    
+    <div class="screen-container">
+        <div class="status-bar">
+            <span id="shift-flag">S</span>
+            <span id="alpha-flag">A</span>
+            <span id="hyp-flag">HYP</span>
+            <span id="sto-flag">STO</span>
+            <span id="rcl-flag">RCL</span>
+            <span id="angle-flag" class="active">D</span>
+        </div>
+        <div class="screen">
+            <div class="expression-row">
+                <span id="scroll-left" class="scroll-arrow">&#9664;</span>
+                <div class="expression" id="expr"></div>
+                <span id="scroll-right" class="scroll-arrow">&#9654;</span>
+            </div>
+            <div class="result" id="res">0</div>
+        </div>
+    </div>
+
+    <div class="keypad">
+        <div class="top-zone">
+            <div class="key-group"><div class="labels"></div><button class="btn btn-shift" onclick="toggleShift()">SHIFT</button></div>
+            <div class="key-group"><div class="labels"></div><button class="btn btn-alpha" onclick="toggleAlpha()">ALPHA</button></div>
+            
+            <div class="d-pad-container">
+                <div class="d-pad">
+                    <button class="d-btn up">&#9650;</button>
+                    <button class="d-btn down">&#9660;</button>
+                    <button class="d-btn left" onclick="moveCursor('left')">&#9664;</button>
+                    <button class="d-btn right" onclick="moveCursor('right')">&#9654;</button>
+                </div>
+            </div>
+            
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">CLR</span></div><button class="btn btn-mode-on" onclick="toggleAngleMode()">MODE</button></div>
+            <div class="key-group"><div class="labels"></div><button class="btn btn-mode-on" onclick="handlePress('ON', null, null)">ON</button></div>
+            
+            <div class="key-group"><div class="labels"><span class="label-shift">SOLVE</span><span class="label-alpha">=</span></div><button class="btn btn-sci">CALC</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift">d/dx</span><span class="label-alpha">:</span></div><button class="btn btn-sci">∫dx</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">x!</span></div><button class="btn btn-sci" onclick="handlePress('⁻¹', '!', null)">x⁻¹</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">³√</span></div><button class="btn btn-sci" onclick="handlePress('³', '³√(', null)">x³</button></div>
+        </div>
+
+        <div class="scientific-zone">
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">d/c</span></div><button class="btn btn-sci" onclick="handlePress('⌟', '⌟', null)">a b/c</button></div>
+            <div class="key-group"><div class="labels"></div><button class="btn btn-sci" onclick="handlePress('√(', null, null)">√</button></div>
+            <div class="key-group"><div class="labels"></div><button class="btn btn-sci" onclick="handlePress('²', null, null)">x²</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">x√</span></div><button class="btn btn-sci" onclick="handlePress('^', 'x√', null)">^</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">10^x</span></div><button class="btn btn-sci" onclick="handlePress('log(', '10^(', null)">log</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift" style="width:50%;">e^x</span><span class="label-alpha" style="width:50%; text-align:right;">e</span></div><button class="btn btn-sci" onclick="handlePress('ln(', '𝑒^(', '𝑒')">ln</button></div>
+            
+            <div class="key-group"><div class="labels"><span class="label-alpha" style="width:100%; text-align:right;">A</span></div><button class="btn btn-sci" onclick="handlePress('-', null, 'A')">(-)</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift">←</span><span class="label-alpha">B</span></div><button class="btn btn-sci" onclick="handlePress('°\'\"', '←', 'B')">°'\"</button></div>
+            <div class="key-group"><div class="labels"><span class="label-alpha" style="width:100%; text-align:right;">C</span></div><button class="btn btn-sci" onclick="handlePress('hyp', null, 'C')">hyp</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift">sin⁻¹</span><span class="label-alpha">D</span></div><button class="btn btn-sci" onclick="handlePress('sin(', 'sin⁻¹(', 'D')">sin</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift">cos⁻¹</span><span class="label-alpha">E</span></div><button class="btn btn-sci" onclick="handlePress('cos(', 'cos⁻¹(', 'E')">cos</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift">tan⁻¹</span><span class="label-alpha">F</span></div><button class="btn btn-sci" onclick="handlePress('tan(', 'tan⁻¹(', 'F')">tan</button></div>
+            
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">STO</span></div><button class="btn btn-sci" onclick="handlePress('RCL', 'STO', null)">RCL</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">←</span></div><button class="btn btn-sci" onclick="handlePress('ENG', '←', null)">ENG</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift">[</span><span class="label-alpha">X</span></div><button class="btn btn-sci" onclick="handlePress('(', '[', 'X')">(</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift">]</span><span class="label-alpha">Y</span></div><button class="btn btn-sci" onclick="handlePress(')', ']', 'Y')">)</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift">;</span><span class="label-alpha">M</span></div><button class="btn btn-sci" onclick="handlePress(',', ';', 'M')">,</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">M-</span></div><button class="btn btn-sci" onclick="handlePress('M+', 'M-', null)">M+</button></div>
+        </div>
+
+        <div class="numpad-zone">
+            <button class="btn btn-num" onclick="handlePress('7', null, null)">7</button>
+            <button class="btn btn-num" onclick="handlePress('8', null, null)">8</button>
+            <button class="btn btn-num" onclick="handlePress('9', null, null)">9</button>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">INS</span></div><button class="btn btn-del-ac" onclick="handlePress('DEL', 'INS', null)">DEL</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">OFF</span></div><button class="btn btn-del-ac" onclick="handlePress('AC', 'OFF', null)">AC</button></div>
+            
+            <button class="btn btn-num" onclick="handlePress('4', null, null)">4</button>
+            <button class="btn btn-num" onclick="handlePress('5', null, null)">5</button>
+            <button class="btn btn-num" onclick="handlePress('6', null, null)">6</button>
+            <button class="btn btn-op" onclick="handlePress('×', null, null)">×</button>
+            <button class="btn btn-op" onclick="handlePress('÷', null, null)">÷</button>
+            
+            <button class="btn btn-num" onclick="handlePress('1', null, null)">1</button>
+            <button class="btn btn-num" onclick="handlePress('2', null, null)">2</button>
+            <button class="btn btn-num" onclick="handlePress('3', null, null)">3</button>
+            <button class="btn btn-op" onclick="handlePress('+', null, null)">+</button>
+            <button class="btn btn-op" onclick="handlePress('-', null, null)">-</button>
+            
+            <button class="btn btn-num" onclick="handlePress('0', null, null)">0</button>
+            <button class="btn btn-num" onclick="handlePress('.', null, null)">.</button>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">π</span></div><button class="btn btn-op" style="font-size:12px;" onclick="handlePress('E', 'π', null)">x10^x</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">DRG▹</span></div><button class="btn btn-op" style="font-size:14px;" onclick="handlePress('Ans', null, null)">Ans</button></div>
+            <div class="key-group"><div class="labels"><span class="label-shift label-center">%</span></div><button class="btn btn-op" onclick="calculate()">=</button></div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+    // --- Dynamic Resizing Engine ---
+    function autoResize() {
+        const wrapper = document.getElementById('calc-wrapper');
+        const scaleX = (window.innerWidth * 0.95) / 360; 
+        const scaleY = (window.innerHeight * 0.95) / 660;
+        let scale = Math.min(scaleX, scaleY);
+        if (scale > 1.4) scale = 1.4; // Cap upscale
+        wrapper.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', autoResize);
+    autoResize();
+
+    // --- Calculator Engine ---
+    const exprDiv = document.getElementById('expr');
+    const resDiv = document.getElementById('res');
+    
+    // Flags
+    const shiftFlag = document.getElementById('shift-flag');
+    const alphaFlag = document.getElementById('alpha-flag');
+    const hypFlag = document.getElementById('hyp-flag');
+    const angleFlag = document.getElementById('angle-flag');
+    const stoFlag = document.getElementById('sto-flag');
+    const rclFlag = document.getElementById('rcl-flag');
+    
+    let currentExpression = "";
+    let cursorPos = 0;
+    let windowStart = 0;
+    const MAX_CHARS = 21; 
+    
+    let ans = 0;
+    let engOffset = 0;
+    let isShiftActive = false, isAlphaActive = false, isHypActive = false;
+    let isStoActive = false, isRclActive = false;
+    
+    let isPowerOn = true;
+    let currentAngleMode = 'DEG'; 
+    
+    // Global Memory Variables
+    var A=0, B=0, C=0, D=0, E=0, F=0, X=0, Y=0, M=0;
+
+    function getAngle(x) { return currentAngleMode === 'DEG' ? x * (Math.PI / 180) : x; }
+    function getInverseAngle(x) { return currentAngleMode === 'DEG' ? x / (Math.PI / 180) : x; }
+
+    function sin(x) { return Math.sin(getAngle(x)); }
+    function cos(x) { return Math.cos(getAngle(x)); }
+    function tan(x) { return Math.tan(getAngle(x)); }
+    function asin(x) { return getInverseAngle(Math.asin(x)); }
+    function acos(x) { return getInverseAngle(Math.acos(x)); }
+    function atan(x) { return getInverseAngle(Math.atan(x)); }
+    
+    function fact(n) {
+        if(n < 0 || n % 1 !== 0) return NaN;
+        if(n === 0) return 1;
+        let r = 1; for(let i = 2; i <= n; i++) r *= i; return r;
+    }
+
+    function decToFractionStr(d) {
+        if (!Number.isFinite(d)) return d;
+        let sign = d < 0 ? -1 : 1; d = Math.abs(d);
+        let whole = Math.floor(d), frac = d - whole;
+        if (frac < 1e-9) return (sign * whole).toString();
+        let h1 = 1, h2 = 0, k1 = 0, k2 = 1, b = frac;
+        for(let i=0; i<30; i++) {
+            let a = Math.floor(b);
+            let h = a * h1 + h2; h2 = h1; h1 = h;
+            let k = a * k1 + k2; k2 = k1; k1 = k;
+            if (b - a < 1e-9) break; b = 1 / (b - a);
+        }
+        if (k1 > 1000) return (sign * d).toString(); 
+        if (whole > 0) return (sign < 0 ? "-" : "") + whole + "⌟" + h1 + "⌟" + k1;
+        return (sign < 0 ? "-" : "") + h1 + "⌟" + k1;
+    }
+
+    function applyEng(dir) {
+        if (currentExpression !== "") calculate();
+        if (ans === 0) return;
+        engOffset += (dir === 1) ? 3 : -3; 
+        
+        let exp = Math.floor(Math.log10(Math.abs(ans)));
+        let engExp = Math.floor(exp / 3) * 3;
+        engExp += engOffset;
+        
+        let mantissa = ans / Math.pow(10, engExp);
+        mantissa = Math.round(mantissa * 1e10) / 1e10; 
+        resDiv.innerText = mantissa + "×10" + (engExp < 0 ? String(engExp) : ("^" + engExp));
+    }
+
+    function toggleShift() { if(!isPowerOn) return; isShiftActive = !isShiftActive; isAlphaActive = false; isStoActive=false; isRclActive=false; updateFlags(); }
+    function toggleAlpha() { if(!isPowerOn) return; isAlphaActive = !isAlphaActive; isShiftActive = false; isStoActive=false; isRclActive=false; updateFlags(); }
+    function updateFlags() { 
+        shiftFlag.className = isShiftActive ? 'active' : ''; 
+        alphaFlag.className = isAlphaActive ? 'active' : ''; 
+        hypFlag.className = isHypActive ? 'active' : '';
+        stoFlag.className = isStoActive ? 'active' : '';
+        rclFlag.className = isRclActive ? 'active' : '';
+    }
+    function toggleAngleMode() { if(!isPowerOn) return; currentAngleMode = currentAngleMode === 'DEG' ? 'RAD' : 'DEG'; angleFlag.innerText = currentAngleMode === 'DEG' ? 'D' : 'R'; }
+    function moveCursor(dir) {
+        if(!isPowerOn) return;
+        if(dir === 'left' && cursorPos > 0) cursorPos--;
+        if(dir === 'right' && cursorPos < currentExpression.length) cursorPos++;
+        updateDisplay();
+    }
+
+    function handlePress(normalVal, shiftVal, alphaVal) {
+        let valToInsert = normalVal;
+        if (isShiftActive && shiftVal !== null) valToInsert = shiftVal;
+        else if (isAlphaActive && alphaVal !== null) valToInsert = alphaVal;
+
+        if (!isPowerOn && valToInsert !== 'ON') return;
+
+        // Power Logic
+        if (valToInsert === 'ON' || valToInsert === 'AC') {
+            isPowerOn = true; engOffset = 0; currentExpression = ""; cursorPos = 0; resDiv.innerText = "0"; 
+            resetStates(); angleFlag.classList.add('active'); updateDisplay(); return;
+        }
+        if (valToInsert === 'OFF') {
+            isPowerOn = false; currentExpression = ""; cursorPos = 0; windowStart = 0;
+            exprDiv.innerHTML = ""; resDiv.innerText = ""; 
+            resetStates(); angleFlag.classList.remove('active'); 
+            document.getElementById('scroll-left').style.visibility = 'hidden';
+            document.getElementById('scroll-right').style.visibility = 'hidden';
+            return;
+        }
+
+        // Memory Operations (STO/RCL)
+        if (valToInsert === 'STO') { isStoActive = true; isShiftActive = false; updateFlags(); return; }
+        if (valToInsert === 'RCL') { isRclActive = true; isShiftActive = false; updateFlags(); return; }
+        
+        const vars = ['A','B','C','D','E','F','X','Y','M'];
+        if (isStoActive || isRclActive) {
+            if (vars.includes(valToInsert)) {
+                if (isStoActive) {
+                    if (currentExpression !== "") calculate();
+                    window[valToInsert] = ans; 
+                    currentExpression = ""; cursorPos = 0;
+                    exprDiv.innerHTML = valToInsert + " =";
+                    resDiv.innerText = ans;
+                } else if (isRclActive) {
+                    currentExpression = ""; cursorPos = 0;
+                    exprDiv.innerHTML = valToInsert + " =";
+                    resDiv.innerText = window[valToInsert];
+                }
+                resetStates(); return;
+            } else {
+                isStoActive = false; isRclActive = false; updateFlags();
+            }
+        }
+        
+        // M+ / M-
+        if (valToInsert === 'M+' || valToInsert === 'M-') {
+            if (currentExpression !== "") calculate();
+            if (valToInsert === 'M+') window['M'] += ans;
+            if (valToInsert === 'M-') window['M'] -= ans;
+            currentExpression = ""; cursorPos = 0;
+            exprDiv.innerHTML = valToInsert; resDiv.innerText = ans;
+            resetStates(); return;
+        }
+
+        // Engineering Notation
+        if (valToInsert === 'ENG') { applyEng(-1); resetStates(); return; }
+        if (valToInsert === '←') { applyEng(1); resetStates(); return; }
+
+        if (valToInsert === '⌟' && currentExpression === "") {
+            if (resDiv.innerText.includes('⌟')) resDiv.innerText = ans; 
+            else resDiv.innerText = decToFractionStr(ans);
+            resetStates(); return;
+        }
+
+        if (valToInsert === 'hyp') { isHypActive = !isHypActive; updateFlags(); return; }
+        if (isHypActive) {
+            let hypMap = { 'sin(': 'sinh(', 'cos(': 'cosh(', 'tan(': 'tanh(', 'sin⁻¹(': 'sinh⁻¹(', 'cos⁻¹(': 'cosh⁻¹(', 'tan⁻¹(': 'tanh⁻¹(' };
+            if (hypMap[valToInsert]) { valToInsert = hypMap[valToInsert]; isHypActive = false; }
+        }
+
+        if (valToInsert === 'DEL') {
+            if(cursorPos > 0) { currentExpression = currentExpression.slice(0, cursorPos - 1) + currentExpression.slice(cursorPos); cursorPos--; updateDisplay(); }
+            resetStates(); return;
+        }
+        
+        currentExpression = currentExpression.slice(0, cursorPos) + valToInsert + currentExpression.slice(cursorPos);
+        cursorPos += valToInsert.length;
+        
+        resetStates();
+        engOffset = 0; // Reset ENG formatting on new typed input
+        updateDisplay();
+    }
+
+    function resetStates() { isShiftActive = false; isAlphaActive = false; isStoActive = false; isRclActive = false; updateFlags(); }
+
+    function updateDisplay() {
+        if(!isPowerOn) return;
+        windowStart = Math.max(0, Math.min(windowStart, currentExpression.length - MAX_CHARS));
+        if (cursorPos < windowStart) windowStart = cursorPos;
+        else if (cursorPos > windowStart + MAX_CHARS) windowStart = cursorPos - MAX_CHARS;
+
+        let displayStr = currentExpression.substring(windowStart, windowStart + MAX_CHARS);
+        let displayCursorPos = cursorPos - windowStart;
+
+        exprDiv.innerHTML = displayStr.substring(0, displayCursorPos) + '<span class="cursor"></span>' + displayStr.substring(displayCursorPos);
+
+        document.getElementById('scroll-left').style.visibility = (windowStart > 0) ? 'visible' : 'hidden';
+        document.getElementById('scroll-right').style.visibility = (windowStart + MAX_CHARS < currentExpression.length) ? 'visible' : 'hidden';
+    }
+
+    function parseFactorials(expr) {
+        while (expr.includes('!')) {
+            let idx = expr.indexOf('!');
+            let start = idx - 1, bracketCount = 0;
+            if (expr[start] === ')') {
+                bracketCount = 1; start--;
+                while (start >= 0 && bracketCount > 0) {
+                    if (expr[start] === ')') bracketCount++;
+                    if (expr[start] === '(') bracketCount--;
+                    start--;
+                }
+                start++; 
+            } else {
+                while (start >= 0 && /[0-9A-Za-z\.𝑒]/.test(expr[start])) start--;
+                start++;
+            }
+            expr = expr.substring(0, start) + `fact(${expr.substring(start, idx)})` + expr.substring(idx + 1);
+        }
+        return expr;
+    }
+
+    function calculate() {
+        if(!isPowerOn || !currentExpression) return;
+        try {
+            let openP = (currentExpression.match(/\(/g) || []).length;
+            let closeP = (currentExpression.match(/\)/g) || []).length;
+            let expr = currentExpression + ")".repeat(Math.max(0, openP - closeP));
+
+            let asFraction = expr.includes('⌟');
+            let evalExpr = parseFactorials(expr);
+
+            evalExpr = evalExpr
+                .replace(/(\d+(?:\.\d+)?)⌟(\d+(?:\.\d+)?)⌟(\d+(?:\.\d+)?)/g, '(Number(\$1)+Number(\$2)/Number(\$3))')
+                .replace(/(\d+(?:\.\d+)?)⌟(\d+(?:\.\d+)?)/g, '(Number(\$1)/Number(\$2))')
+                .replace(/×/g, '*').replace(/÷/g, '/')
+                .replace(/Ans/g, `(${ans})`)
+                .replace(/π/g, '(Math.PI)')
+                .replace(/10\^\(/g, '10**(')
+                .replace(/𝑒\^\(/g, '(Math.E)**(') // Evaluates internal mapped Euler exponent
+                .replace(/𝑒/g, '(Math.E)')       // Evaluates pure internal Euler variable
+                .replace(/sinh⁻¹\(/g, 'Math.asinh(').replace(/cosh⁻¹\(/g, 'Math.acosh(').replace(/tanh⁻¹\(/g, 'Math.atanh(')
+                .replace(/sinh\(/g, 'Math.sinh(').replace(/cosh\(/g, 'Math.cosh(').replace(/tanh\(/g, 'Math.tanh(')
+                .replace(/sin⁻¹\(/g, 'asin(').replace(/cos⁻¹\(/g, 'acos(').replace(/tan⁻¹\(/g, 'atan(')
+                .replace(/sin\(/g, 'sin(').replace(/cos\(/g, 'cos(').replace(/tan\(/g, 'tan(')
+                .replace(/E/g, '*10**').replace(/\^/g, '**')
+                .replace(/²/g, '**2').replace(/³/g, '**3').replace(/⁻¹/g, '**-1'); 
+            
+            let result = eval(evalExpr);
+            if(result === undefined || isNaN(result) || !isFinite(result)) throw new Error();
+            
+            result = Math.round(result * 10000000000) / 10000000000;
+            ans = result; engOffset = 0;
+            
+            resDiv.innerText = asFraction ? decToFractionStr(result) : result;
+            currentExpression = ""; cursorPos = 0; windowStart = 0; updateDisplay();
+        } catch (err) { resDiv.innerText = "Math ERROR"; }
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (!isPowerOn && event.key !== 'Escape') return; 
+        const key = event.key;
+        if (/[0-9\+\-\*\/\.\(\)\!]/.test(key)) { event.preventDefault(); handlePress(key === '*' ? '×' : key === '/' ? '÷' : key, null, null); } 
+        else if (key === 'Enter' || key === '=') { event.preventDefault(); calculate(); } 
+        else if (key === 'Backspace') { event.preventDefault(); handlePress('DEL', null, null); } 
+        else if (key === 'Escape') { event.preventDefault(); handlePress('AC', null, null); } 
+        else if (key === 'ArrowLeft') { event.preventDefault(); moveCursor('left'); } 
+        else if (key === 'ArrowRight') { event.preventDefault(); moveCursor('right'); }
+    });
+    
+    updateDisplay();
+</script>
+</body>
+</html>
